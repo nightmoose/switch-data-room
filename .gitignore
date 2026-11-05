@@ -1,0 +1,14 @@
+.env
+.switch/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+drops/*.csv
+accepted/
+quarantine/*
+!quarantine/.gitkeep
+.DS_Store

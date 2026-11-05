@@ -1,0 +1,59 @@
+version: "1.0.0"
+name: remediation_output_contract
+description: Structured remediation proposal from the fixer role.
+compliance_mode: true
+ontology:
+  entities:
+    - name: summary
+      type: string
+      required: true
+      min_length: 1
+    - name: failed_row_count
+      type: integer
+      required: true
+      min: 0
+    - name: total_row_count
+      type: integer
+      required: true
+      min: 0
+    - name: fields
+      type: array
+      required: true
+      items:
+        name: field
+        type: string
+        required: true
+    - name: proposed_changes
+      type: array
+      required: true
+      items:
+        name: change
+        type: object
+        required: true
+        properties:
+          - name: target
+            type: string
+            required: true
+            enum: ["normalizer", "contract", "routing"]
+          - name: field
+            type: string
+            required: true
+          - name: action
+            type: string
+            required: true
+          - name: detail
+            type: string
+            required: true
+    - name: human_override_required
+      type: boolean
+      required: true
+    - name: diff
+      type: string
+      required: true
+glossary:
+  - field: failed_row_count
+    description: Must match the DataContractGate failed-row count for this drop.
+    constraints: grounded in the failure report
+  - field: human_override_required
+    description: Set true only when a change weakens a required field or primary key.
+    constraints: explicit human override

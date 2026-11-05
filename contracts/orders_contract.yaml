@@ -1,0 +1,37 @@
+version: "1.0.0"
+name: orders_contract
+description: Partner order lines accepted into the warehouse feed.
+compliance_mode: true
+ontology:
+  entities:
+    - name: order_id
+      type: string
+      required: true
+      pattern: "^ORD-[0-9]{6}$"
+    - name: sku
+      type: string
+      required: true
+      pattern: "^SKU-[A-Z0-9]{4}$"
+    - name: quantity
+      type: integer
+      required: true
+      min: 1
+      max: 500
+    - name: currency
+      type: string
+      required: true
+      enum: ["USD", "EUR", "GBP"]
+    - name: status
+      type: string
+      required: true
+      enum: ["placed", "paid", "shipped"]
+glossary:
+  - field: order_id
+    description: Stable identifier for one order line.
+    constraints: primary key
+  - field: quantity
+    description: Units on an order line. Negative units are refunds and do not belong on this contract.
+    constraints: required range 1..500
+  - field: currency
+    description: ISO 4217 currency code in uppercase.
+    constraints: enum USD EUR GBP

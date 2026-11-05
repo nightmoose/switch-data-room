@@ -1,0 +1,309 @@
+# Switch room template, version 2.
+# Import from Switch Console (Templates) or run it with the template tools.
+# Create the always-on gatekeeper with switch_gate_agent.py before you run this,
+# then pick that agent and the coding agent that will hold @fixer.
+version: 2
+params:
+  gatekeeper_agent:
+    type: agent
+    label: Gatekeeper agent
+    description: Always-on agent registered by switch_gate_agent.py. It assumes @gatekeeper.
+    required: true
+  fixer_agent:
+    type: agent
+    label: Fixer agent
+    description: Coding agent already connected in Switch Console. It assumes @fixer.
+    required: true
+resources:
+  ingest:
+    type: room
+    name: data-ingest
+    description: Partner drops land here. Clean batches stay here. Broken batches escalate.
+    channel_type: channel_public
+    group: reliability
+    agents: ["{gatekeeper_agent}"]
+    users: ["{$creator}"]
+    aliases:
+      "{gatekeeper_agent}": gatekeeper
+    instructions: |
+      This room is the data boundary for partner order CSV drops.
+      The contract in the room documents is the one DataContractGate enforces.
+      A person or a job posts `@gatekeeper check <path>` when a file arrives.
+      Heartbeats for clean drops stay in this room. Broken drops go to #data-incidents through the escalates_to link.
+    roles:
+      - name: gatekeeper
+        exclusive: true
+        instructions: |
+          You are @gatekeeper for this room.
+          On `check <path>`, load orders_contract.yaml from the room documents and validate the CSV with DataContractGate. Quarantine failing rows. When rows fail, follow the escalates_to link to #data-incidents and address @fixer with the failure facts.
+          On a fenced JSON remediation, validate it with AISchemaGate. Counts must match the failure facts, columns and files must exist, and a change must not weaken a required field or primary key unless human_override_required is true.
+          Do not ask a person to approve a BLOCKED proposal. After PASS, wait for `approve patch`. On `recheck <path>`, run the normalizer and update incident_log.md.
+    docs:
+      - name: orders_contract.yaml
+        description: DataContractGate spec for partner order drops.
+        instructions: |
+          Load this before validating a drop. Do not weaken it during remediation.
+        content: |
+          version: "1.0.0"
+          name: orders_contract
+          description: Partner order lines accepted into the warehouse feed.
+          compliance_mode: true
+          ontology:
+            entities:
+              - name: order_id
+                type: string
+                required: true
+                pattern: "^ORD-[0-9]{6}$"
+              - name: sku
+                type: string
+                required: true
+                pattern: "^SKU-[A-Z0-9]{4}$"
+              - name: quantity
+                type: integer
+                required: true
+                min: 1
+                max: 500
+              - name: currency
+                type: string
+                required: true
+                enum: ["USD", "EUR", "GBP"]
+              - name: status
+                type: string
+                required: true
+                enum: ["placed", "paid", "shipped"]
+          glossary:
+            - field: order_id
+              description: Stable identifier for one order line.
+              constraints: primary key
+            - field: quantity
+              description: Units on an order line. Negative units are refunds and do not belong on this contract.
+              constraints: required range 1..500
+            - field: currency
+              description: ISO 4217 currency code in uppercase.
+              constraints: enum USD EUR GBP
+      - name: remediation_output_contract.yaml
+        description: AISchemaGate spec for fixer remediation JSON.
+        instructions: |
+          Validate every fenced remediation JSON object against this document.
+        content: |
+          version: "1.0.0"
+          name: remediation_output_contract
+          description: Structured remediation proposal from the fixer role.
+          compliance_mode: true
+          ontology:
+            entities:
+              - name: summary
+                type: string
+                required: true
+                min_length: 1
+              - name: failed_row_count
+                type: integer
+                required: true
+                min: 0
+              - name: total_row_count
+                type: integer
+                required: true
+                min: 0
+              - name: fields
+                type: array
+                required: true
+                items:
+                  name: field
+                  type: string
+                  required: true
+              - name: proposed_changes
+                type: array
+                required: true
+                items:
+                  name: change
+                  type: object
+                  required: true
+                  properties:
+                    - name: target
+                      type: string
+                      required: true
+                      enum: ["normalizer", "contract", "routing"]
+                    - name: field
+                      type: string
+                      required: true
+                    - name: action
+                      type: string
+                      required: true
+                    - name: detail
+                      type: string
+                      required: true
+              - name: human_override_required
+                type: boolean
+                required: true
+              - name: diff
+                type: string
+                required: true
+          glossary:
+            - field: failed_row_count
+              description: Must match the DataContractGate failed-row count for this drop.
+              constraints: grounded in the failure report
+            - field: human_override_required
+              description: Set true only when a change weakens a required field or primary key.
+              constraints: explicit human override
+    kickoff: |
+      @{gatekeeper_agent} this room accepts partner drops.
+      Wait for `check drops/orders_2026-11-05.csv`. Load orders_contract.yaml from the room documents before you validate.
+  incidents:
+    type: room
+    name: data-incidents
+    description: Broken drops, fixer proposals, and human approval.
+    channel_type: channel_public
+    group: reliability
+    agents: ["{gatekeeper_agent}", "{fixer_agent}"]
+    users: ["{$creator}"]
+    aliases:
+      "{gatekeeper_agent}": gatekeeper
+      "{fixer_agent}": fixer
+    instructions: |
+      This room is where a broken drop gets repaired.
+      @gatekeeper posts DataContractGate failure facts and addresses @fixer.
+      @fixer answers with one JSON remediation that AISchemaGate can check.
+      A person approves in chat. The gatekeeper rechecks and updates incident_log.md.
+    roles:
+      - name: gatekeeper
+        exclusive: true
+        instructions: |
+          You are @gatekeeper for this room.
+          On `check <path>`, load orders_contract.yaml from the room documents and validate the CSV with DataContractGate. Quarantine failing rows. When rows fail, follow the escalates_to link to #data-incidents and address @fixer with the failure facts.
+          On a fenced JSON remediation, validate it with AISchemaGate. Counts must match the failure facts, columns and files must exist, and a change must not weaken a required field or primary key unless human_override_required is true.
+          Do not ask a person to approve a BLOCKED proposal. After PASS, wait for `approve patch`. On `recheck <path>`, run the normalizer and update incident_log.md.
+      - name: fixer
+        exclusive: true
+        instructions: |
+          You are @fixer for this room.
+          When @gatekeeper sends failure facts, read orders_contract.yaml and the quarantined rows. Reply with one fenced json object matching remediation_output_contract.yaml and put the unified diff in the diff field.
+          Counts in the summary and failed_row_count must match the facts. Every column you name must exist on the drop and the contract. Do not widen quantity past 1..500 and do not drop order_id.
+          Set human_override_required to true only when a change weakens a required field or primary key, and then wait.
+          If the reply is [AISchemaGate: BLOCKED], repair the JSON and resubmit. After [AISchemaGate: PASS], wait for a person to send `@fixer approve patch`. Only then apply the diff and send `@gatekeeper recheck` for the same file.
+    docs:
+      - name: orders_contract.yaml
+        description: DataContractGate spec for partner order drops.
+        instructions: |
+          Load this before validating a drop. Do not weaken it during remediation.
+        content: |
+          version: "1.0.0"
+          name: orders_contract
+          description: Partner order lines accepted into the warehouse feed.
+          compliance_mode: true
+          ontology:
+            entities:
+              - name: order_id
+                type: string
+                required: true
+                pattern: "^ORD-[0-9]{6}$"
+              - name: sku
+                type: string
+                required: true
+                pattern: "^SKU-[A-Z0-9]{4}$"
+              - name: quantity
+                type: integer
+                required: true
+                min: 1
+                max: 500
+              - name: currency
+                type: string
+                required: true
+                enum: ["USD", "EUR", "GBP"]
+              - name: status
+                type: string
+                required: true
+                enum: ["placed", "paid", "shipped"]
+          glossary:
+            - field: order_id
+              description: Stable identifier for one order line.
+              constraints: primary key
+            - field: quantity
+              description: Units on an order line. Negative units are refunds and do not belong on this contract.
+              constraints: required range 1..500
+            - field: currency
+              description: ISO 4217 currency code in uppercase.
+              constraints: enum USD EUR GBP
+      - name: remediation_output_contract.yaml
+        description: AISchemaGate spec for fixer remediation JSON.
+        instructions: |
+          Validate every fenced remediation JSON object against this document.
+        content: |
+          version: "1.0.0"
+          name: remediation_output_contract
+          description: Structured remediation proposal from the fixer role.
+          compliance_mode: true
+          ontology:
+            entities:
+              - name: summary
+                type: string
+                required: true
+                min_length: 1
+              - name: failed_row_count
+                type: integer
+                required: true
+                min: 0
+              - name: total_row_count
+                type: integer
+                required: true
+                min: 0
+              - name: fields
+                type: array
+                required: true
+                items:
+                  name: field
+                  type: string
+                  required: true
+              - name: proposed_changes
+                type: array
+                required: true
+                items:
+                  name: change
+                  type: object
+                  required: true
+                  properties:
+                    - name: target
+                      type: string
+                      required: true
+                      enum: ["normalizer", "contract", "routing"]
+                    - name: field
+                      type: string
+                      required: true
+                    - name: action
+                      type: string
+                      required: true
+                    - name: detail
+                      type: string
+                      required: true
+              - name: human_override_required
+                type: boolean
+                required: true
+              - name: diff
+                type: string
+                required: true
+          glossary:
+            - field: failed_row_count
+              description: Must match the DataContractGate failed-row count for this drop.
+              constraints: grounded in the failure report
+            - field: human_override_required
+              description: Set true only when a change weakens a required field or primary key.
+              constraints: explicit human override
+      - name: incident_log.md
+        description: Resolutions written after a clean recheck.
+        instructions: |
+          Replace this note when a recheck passes.
+        content: |
+          # Incident log
+
+          No resolved incidents yet. The gatekeeper replaces this note after a clean recheck.
+    kickoff: |
+      @{gatekeeper_agent} @{fixer_agent} broken drops escalate here.
+      @{fixer_agent} wait for failure facts, then post one fenced JSON remediation and a diff.
+      A person approves with `@fixer approve patch`.
+  reliability:
+    type: group
+    name: Data reliability
+    description: Clean drops stay in ingest. Broken drops escalate to incidents.
+    links:
+      - from: ingest
+        to: incidents
+        label: escalates_to

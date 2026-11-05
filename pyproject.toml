@@ -1,0 +1,25 @@
+[project]
+name = "switch-data-room"
+version = "0.1.0"
+description = "Data Reliability Room on Switch. DataContractGate and AISchemaGate triage a dirty CSV in chat."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "NightMoose, Inc." }]
+dependencies = [
+  "contractgate==0.4.1",
+  "aischemagate==0.5.0",
+  "httpx>=0.25,<1",
+  "PyYAML>=6",
+  "websockets>=12",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools]
+packages = ["data_room"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

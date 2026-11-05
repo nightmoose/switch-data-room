@@ -1,0 +1,6 @@
+NAME                            IMAGE                                        COMMAND                  SERVICE      CREATED         STATUS                    PORTS
+switch-data-room-gateway-1      ghcr.io/sandbox-quantum/gateway:0.31.0       "/docker-entrypoint.…"   gateway      4 minutes ago   Up 58 seconds             80/tcp, 127.0.0.1:3000->3000/tcp
+switch-data-room-mattermost-1   mattermost/mattermost-team-edition:11.9.0    "/mattermost/bin/mat…"   mattermost   4 minutes ago   Up 58 seconds (healthy)   8067/tcp, 127.0.0.1:8065->8065/tcp, 8074-8075/tcp
+switch-data-room-postgres-1     postgres:16-alpine                           "docker-entrypoint.s…"   postgres     4 minutes ago   Up 4 minutes (healthy)    127.0.0.1:5432->5432/tcp
+switch-data-room-switch-1       ghcr.io/sandbox-quantum/switch-core:0.31.0   "python -m switch_co…"   switch       4 minutes ago   Up 58 seconds             127.0.0.1:8000->8000/tcp
+

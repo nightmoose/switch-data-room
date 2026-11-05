@@ -23,8 +23,6 @@ resources:
     group: reliability
     agents: ["{gatekeeper_agent}"]
     users: ["{$creator}"]
-    aliases:
-      "{gatekeeper_agent}": gatekeeper
     instructions: |
       This room is the data boundary for partner order CSV drops.
       The contract in the room documents is the one DataContractGate enforces.
@@ -156,9 +154,6 @@ resources:
     group: reliability
     agents: ["{gatekeeper_agent}", "{fixer_agent}"]
     users: ["{$creator}"]
-    aliases:
-      "{gatekeeper_agent}": gatekeeper
-      "{fixer_agent}": fixer
     instructions: |
       This room is where a broken drop gets repaired.
       @gatekeeper posts DataContractGate failure facts and addresses @fixer.

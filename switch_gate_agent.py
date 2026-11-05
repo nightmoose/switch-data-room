@@ -171,7 +171,7 @@ class SwitchClient:
                 "fixer proposals with AISchemaGate."
             ),
             "connector_type": CLIENT_NAME,
-            "display_name": "Gatekeeper",
+            "display_name": _display_name(self.config.agent_name),
             "integration_profile": registration_profile(),
         }
         if self.config.overwrite:
@@ -334,6 +334,15 @@ def message_payload(frame: Mapping[str, Any]) -> dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
+def _display_name(agent_name: str) -> str:
+    lowered = agent_name.lower()
+    if "fixer" in lowered and "gatekeeper" not in lowered:
+        return "Fixer"
+    if "gatekeeper" in lowered:
+        return "Gatekeeper"
+    return agent_name
+
+
 def registration_profile() -> dict[str, Any]:
     """The integration profile this client sends. Exposed for tests."""
     return {
@@ -392,6 +401,10 @@ class RoomRunner:
                 )
         self.occupy("incidents")
         self._load_room_contracts()
+        print(
+            f"Connected as @gatekeeper in {', '.join(sorted(self.room_ids))}",
+            file=sys.stderr,
+        )
 
     def occupy(self, room_key: str) -> None:
         room_id = self.room_ids[room_key]

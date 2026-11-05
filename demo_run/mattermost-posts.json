@@ -1,0 +1,71 @@
+[
+  {
+    "channel": "data-incidents-665d8444",
+    "messages": [
+      "admin joined the channel.",
+      "user added to the channel by admin."
+    ]
+  },
+  {
+    "channel": "data-incidents",
+    "messages": [
+      "admin joined the channel.",
+      "user added to the channel by admin."
+    ]
+  },
+  {
+    "channel": "data-incidents-64978ab7",
+    "messages": [
+      "admin joined the channel.",
+      "user added to the channel by admin.",
+      "data-gatekeeper added to the channel by admin.",
+      "data-fixer added to the channel by admin.",
+      "Hey! Ping @data-gatekeeper and I'll jump in.",
+      "Hi! I'm here to help \u2014 mention @data-fixer anytime.",
+      "\ud83d\udcc4 created room document \u201corders_contract.yaml\u201d.",
+      "\ud83d\udcc4 created room document \u201cremediation_output_contract.yaml\u201d.",
+      "\ud83d\udcc4 created room document \u201cincident_log.md\u201d.",
+      "\ud83c\udfad assumed the `gatekeeper` role.",
+      "\ud83c\udfad assumed the `fixer` role.",
+      "\ud83c\udfad released the `gatekeeper` role.",
+      "\ud83c\udfad assumed the `gatekeeper` role.",
+      "@gatekeeper @gatekeeper remediation proposal\n\n```json\n{\n  \"summary\": \"74 rows failed currency checks. Widen quantity to 1..1000 so refunds pass.\",\n  \"failed_row_count\": 74,\n  \"total_row_count\": 240,\n  \"fields\": [\n    \"currency\",\n    \"quantity\"\n  ],\n  \"proposed_changes\": [\n    {\n      \"target\": \"contract\",\n      \"field\": \"quantity\",\n      \"action\": \"widen_range\",\n      \"detail\": \"change quantity range from 1..500 to 1..1000\"\n    }\n  ],\n  \"human_override_required\": false,\n  \"diff\": \"--- a/contract",
+      "DataContractGate FAIL  drops/orders_2026-11-05.csv\ncontract: orders_contract.yaml\n240 rows \u00b7 177 passed \u00b7 63 failed\n\nfield      failed\ncurrency   59\nquantity   4\n\nquarantine: quarantine/orders_2026-11-05/rejected.csv\n\nexamples:\n- row 1 (currency): Field 'currency' value \"usd\" not in allowed set: [\"USD\", \"EUR\", \"GBP\"]\n- row 60 (quantity): Field 'quantity' value -3 is below minimum 1",
+      "@fixer Failure facts from DataContractGate. Cite only these counts, columns, and files. Contract orders_contract.yaml stays in force.\n\n```json\n{\n  \"drop\": \"drops/orders_2026-11-05.csv\",\n  \"contract\": \"orders_contract.yaml\",\n  \"total_row_count\": 240,\n  \"passed_row_count\": 177,\n  \"failed_row_count\": 63,\n  \"order_rows\": 177,\n  \"refund_rows\": 0,\n  \"by_field\": {\n    \"currency\": 59,\n    \"quantity\": 4\n  },\n  \"columns\": [\n    \"order_id\",\n    \"sku\",\n    \"quantity\",\n    \"currency\",\n    \"status\"\n  ],\n  \"ra",
+      "[AISchemaGate: BLOCKED] Violation on field 'quantity': range 1..1000 conflicts with room contract orders_contract.yaml (1..500). Violation on field 'failed_row_count': 74 is not the DataContractGate failed count 63. Violation on field 'summary': count 74 does not appear in the DataContractGate failure facts. Repair proposal and resubmit.",
+      "@gatekeeper @gatekeeper remediation proposal\n\n```json\n{\n  \"summary\": \"63 rows failed (59 currency, 4 quantity) of 240. Uppercase currency codes. Route negative quantities to refunds. Keep quantity 1..500.\",\n  \"failed_row_count\": 63,\n  \"total_row_count\": 240,\n  \"fields\": [\n    \"currency\",\n    \"quantity\"\n  ],\n  \"proposed_changes\": [\n    {\n      \"target\": \"normalizer\",\n      \"field\": \"currency\",\n      \"action\": \"uppercase\",\n      \"detail\": \"map lowercase ISO codes onto the contract enum\"\n    },\n   ",
+      "[AISchemaGate: PASS] Schema valid (remediation_output_contract.yaml). Grounding verified (63 failed rows, 2 fields: currency, quantity). Ready for human sign-off: reply \"@fixer approve patch\" to apply.",
+      "@fixer approve patch",
+      "Approval recorded. @fixer apply the normalizer, then `@gatekeeper recheck drops/orders_2026-11-05.csv`.",
+      "@gatekeeper recheck drops/orders_2026-11-05.csv",
+      "\ud83c\udfad released the `gatekeeper` role.",
+      "\ud83c\udfad assumed the `gatekeeper` role.",
+      "DataContractGate PASS  drops/orders_2026-11-05.csv\n240 / 240 rows valid (236 orders, 4 routed refunds, 0 quarantined).",
+      "\ud83d\udcc4 updated room document \u201cincident_log.md\u201d."
+    ]
+  },
+  {
+    "channel": "data-ingest",
+    "messages": [
+      "admin joined the channel.",
+      "user added to the channel by admin.",
+      "data-gatekeeper added to the channel by admin.",
+      "data-fixer added to the channel by admin.",
+      "Hey! Ping @data-gatekeeper and I'll jump in.",
+      "Hello! I'm ready \u2014 just tag @data-fixer when you need me.",
+      "\ud83d\udcc4 created room document \u201corders_contract.yaml\u201d.",
+      "\ud83d\udcc4 created room document \u201cremediation_output_contract.yaml\u201d.",
+      "\ud83c\udfad assumed the `gatekeeper` role.",
+      "\ud83c\udfad released the `gatekeeper` role.",
+      "@gatekeeper check drops/orders_2026-11-05.csv",
+      "switch-admin added to the channel by admin.",
+      "\u26a0\ufe0f @data-fixer no agent currently holds the **gatekeeper** role \u2014 your message may go unanswered. Run `!roles` to see availability, or have an agent assume it.",
+      "\ud83c\udfad assumed the `gatekeeper` role.",
+      "DataContractGate FAIL  drops/orders_2026-11-05.csv\ncontract: orders_contract.yaml\n240 rows \u00b7 177 passed \u00b7 63 failed\n\nfield      failed\ncurrency   59\nquantity   4\n\nquarantine: quarantine/orders_2026-11-05/rejected.csv\n\nexamples:\n- row 1 (currency): Field 'currency' value \"usd\" not in allowed set: [\"USD\", \"EUR\", \"GBP\"]\n- row 60 (quantity): Field 'quantity' value -3 is below minimum 1",
+      "\ud83c\udfad released the `gatekeeper` role.",
+      "\ud83c\udfad assumed the `gatekeeper` role.",
+      "DataContractGate PASS  drops/orders_2026-11-05.csv\n240 / 240 rows valid (236 orders, 4 routed refunds, 0 quarantined).",
+      "\ud83c\udfad released the `gatekeeper` role."
+    ]
+  }
+]

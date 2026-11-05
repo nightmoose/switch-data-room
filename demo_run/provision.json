@@ -1,0 +1,115 @@
+{
+  "rooms": {
+    "ingest": "4fdcb29e-e247-45d0-a4cf-196533de06e4",
+    "incidents": "eda222f3-870d-464c-9754-09a1fc424c84"
+  },
+  "log": [
+    {
+      "op": "register gatekeeper",
+      "status": 200,
+      "result": null
+    },
+    {
+      "op": "register fixer",
+      "status": 200,
+      "result": null
+    },
+    {
+      "op": "addressing gatekeeper",
+      "status": 403,
+      "body": "{\"detail\":\"An agent can't change its own settings, permissions or services. Your owner changes them on your page in Switch Console.\"}"
+    },
+    {
+      "op": "addressing fixer",
+      "status": 403,
+      "body": "{\"detail\":\"An agent can't change its own settings, permissions or services. Your owner changes them on your page in Switch Console.\"}"
+    },
+    {
+      "op": "list_rooms",
+      "status": 200,
+      "result": [
+        {
+          "room_id": "3a7da465-a332-42a1-a966-db726f15f6da",
+          "name": "Mattermost: Off-Topic",
+          "description": "Auto-bridged from Mattermost channel Off-Topic",
+          "connected": false,
+          "archived": false
+        },
+        {
+          "room_id": "1387d075-4c1b-4fd6-8cb7-7107e9c30a93",
+          "name": "Mattermost: Town Square",
+          "description": "Auto-bridged from Mattermost channel Town Square",
+          "connected": false,
+          "archived": false
+        }
+      ]
+    },
+    {
+      "op": "create_room_from_yaml",
+      "status": 400,
+      "body": "{\"detail\":\"this template puts you in the room as {$creator}, but you have no linked account on Mattermost. Link your account under Identities, then create the room again\"}"
+    },
+    {
+      "op": "create_room_from_yaml_no_group",
+      "status": 400,
+      "body": "{\"detail\":\"Several rooms go in a group: add a resource of type group, and give each room group: <its key>.\"}"
+    },
+    {
+      "op": "create_room incidents",
+      "status": 200,
+      "result": {
+        "id": "eda222f3-870d-464c-9754-09a1fc424c84",
+        "name": "data-incidents",
+        "transport_room_id": "sw_room_e768aee6f3f74adf9c30e14c1d6564b3",
+        "matrix_room_id": "sw_room_e768aee6f3f74adf9c30e14c1d6564b3",
+        "failed_attachments": []
+      }
+    },
+    {
+      "op": "create_room ingest",
+      "status": 200,
+      "result": {
+        "id": "4fdcb29e-e247-45d0-a4cf-196533de06e4",
+        "name": "data-ingest",
+        "transport_room_id": "sw_room_517b25f0c3a443b7a322f51a348594dc",
+        "matrix_room_id": "sw_room_517b25f0c3a443b7a322f51a348594dc",
+        "failed_attachments": []
+      }
+    },
+    {
+      "op": "create_room_document orders_contract.yaml",
+      "status": 200,
+      "result": {
+        "document_id": "1426083c-6789-4348-8cb4-951719e19828"
+      }
+    },
+    {
+      "op": "create_room_document remediation_output_contract.yaml",
+      "status": 200,
+      "result": {
+        "document_id": "88fce83d-7f33-408c-8657-d796f92da5ad"
+      }
+    },
+    {
+      "op": "create_room_document orders_contract.yaml",
+      "status": 200,
+      "result": {
+        "document_id": "fb9b3c05-c9a2-458e-b982-076692893ab5"
+      }
+    },
+    {
+      "op": "create_room_document remediation_output_contract.yaml",
+      "status": 200,
+      "result": {
+        "document_id": "457f48b5-b952-442a-8d73-ee460d261e9b"
+      }
+    },
+    {
+      "op": "create_room_document incident_log.md",
+      "status": 200,
+      "result": {
+        "document_id": "6601d48f-4f45-436c-9e66-ae8f62d6662d"
+      }
+    }
+  ]
+}

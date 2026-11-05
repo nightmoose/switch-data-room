@@ -1,0 +1,17 @@
+{
+  "id": "089a6dab-a9fb-4de1-a68e-72f0d6e14e8b",
+  "owner_id": "996d1fb3-1d29-4c0d-b4fd-546cbb5dd264",
+  "owner_name": "Admin",
+  "name": "Data reliability room",
+  "description": "Ingest escalates to incidents. Gatekeeper and fixer roles.",
+  "kind": "room",
+  "read_visibility": "public",
+  "write_visibility": "private",
+  "official": false,
+  "can_edit": true,
+  "can_manage": true,
+  "version": 1,
+  "size_bytes": 13174,
+  "created_at": "2026-11-05 13:07:52.401194+00:00",
+  "updated_at": "2026-11-05 13:07:52.401194+00:00"
+}

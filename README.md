@@ -6,7 +6,29 @@ A partner CSV lands with schema drift. `@gatekeeper` checks it with DataContract
 
 Switch is the place the work runs. The contracts live in room documents, the two seats are room roles, and `#data-ingest` escalates to `#data-incidents` through a room link. Mattermost (bundled with a local Switch server), Slack, and Discord are surfaces on that same room. The workflow needs those Switch primitives. This process decides; Switch carries the conversation.
 
+That is the whole product. Use of Switch is 30% of the hackathon score, and this room stops working if you take Switch away:
+
+- The active contract is a **room document** (`load_internal_documents`), so the person, `@gatekeeper`, and `@fixer` read one copy.
+- `@gatekeeper` and `@fixer` are **roles** (`assume_role`). The chat addresses the seat, so the coding agent can move machines and the room still says `@fixer`.
+- `#data-ingest` **links** to `#data-incidents` with label `escalates_to`. Clean heartbeats stay in ingest. Broken drops move.
+- The **collaboration bridge** is what puts that same room in Mattermost, and later in Slack or Discord. There is no second workflow for each chat app.
+
 Agent protocol: <https://docs.switchagents.ai/switch-rooms/internals/agent-protocol.md>. Quickstart: <https://docs.switchagents.ai/switch-rooms/getting-started/index.md>.
+
+```mermaid
+flowchart LR
+  subgraph chat [Team chat]
+    ingest["#data-ingest"]
+    incidents["#data-incidents"]
+    ingest -->|escalates_to| incidents
+  end
+  chat --> bridge[Switch bridge]
+  bridge --> core["switch-core + Postgres"]
+  core --> docs["Room documents: orders contract, remediation contract, incident log"]
+  core --> roles["Roles @gatekeeper and @fixer"]
+  core --> gate["switch_gate_agent.py\nDataContractGate + AISchemaGate"]
+  core --> fixer["Coding agent in Switch Console\nor the scripted fixer"]
+```
 
 ## Rooms
 
@@ -23,16 +45,19 @@ Room documents, stored in the room rather than only in this git tree:
 - `remediation_output_contract.yaml` — AISchemaGate spec for the fixer JSON
 - `incident_log.md` — updated after a clean recheck
 
-`@gatekeeper` is this repo's always-on agent (`switch_gate_agent.py`). `@fixer` is a coding agent you connect in Switch Console and point at this directory. The fixer role text in the template is its brief: one fenced JSON object, a diff, no weakening of a required field or the primary key unless `human_override_required` is true, and no apply until a person sends `@fixer approve patch`.
+`@gatekeeper` is the role held by `switch_gate_agent.py` (`data-gatekeeper` on a live server). `@fixer` is the role for the coding agent you connect in Switch Console, or for `data-fixer` when you run `make live-loop`. Switch rejects an alias that uses the same name as a role, so the template defines the roles and does not also alias the agents to those names. A targeted message to the role is how the room reaches whoever holds it.
 
-## Run the offline demo
+The fixer role text in the template is the brief: one fenced JSON object, a diff, no weakening of a required field or the primary key unless `human_override_required` is true, and no apply until a person sends `@fixer approve patch`.
 
-These commands do not need a Switch server. CI runs the same tests.
+## Clone and run
+
+Offline, no Switch server. CI runs the same tests.
 
 ```bash
+git clone https://github.com/nightmoose/switch-data-room.git
+cd switch-data-room
 python3 -m pip install -r requirements.txt
 make test
-make drop-dirty
 make demo
 ```
 
@@ -85,36 +110,67 @@ Mattermost comes up with that server. With the official Compose profiles it is o
 
 ### Docker Compose from the published stack
 
-Switch publishes the Compose file as an OCI artifact, `ghcr.io/sandbox-quantum/standalone-compose:<version>`, and the images `ghcr.io/sandbox-quantum/switch-core`, `gateway`, and `setup` at that same version. Set `SWITCH_VERSION` to that tag; the Compose file requires it. Console release numbers and server release numbers are different lists. Pull the Compose file from the registry when you deploy.
+Switch publishes the Compose file as an OCI artifact, `ghcr.io/sandbox-quantum/standalone-compose:<version>`, and the images `ghcr.io/sandbox-quantum/switch-core`, `gateway`, and `setup` at that same version. Set `SWITCH_VERSION` to that tag. The Compose file requires it. Console release numbers and server release numbers are different lists. The self-host page is <https://docs.switchagents.ai/switch-rooms/deploy/self-host.md>.
 
-The current steps live in the Switch repository at `deploy/local/standalone-docker-compose.yml` and on the [self-host page](https://docs.switchagents.ai/switch-rooms/deploy/self-host.md).
-
-```bash
-oras repo tags ghcr.io/sandbox-quantum/standalone-compose
-oras pull ghcr.io/sandbox-quantum/standalone-compose:<version>
-```
-
-`oras pull` writes `standalone-docker-compose.yml`. Use Switch's own `.env.example` beside it and set `SWITCH_VERSION`, `AGENT_REGISTRATION_TOKEN`, `SECRET_KEYS` (`1:` plus a secret of at least 32 characters), `GATEWAY_ADMIN_EMAIL`, `GATEWAY_ADMIN_PASSWORD`, `DB_OWNER_PASSWORD`, `DB_PASSWORD`, `MATTERMOST_ADMIN_PASSWORD`, and `MATTERMOST_USER_PASSWORD`.
+`make switch-up` pins **0.31.0**, the newest non-rc tag on that registry as of 2026-11-05. `0.32.0-rc.1` is also published. Opt into it with `SWITCH_VERSION=0.32.0-rc.1 make switch-up`.
 
 ```bash
-docker compose -f standalone-docker-compose.yml --profile collab --profile gateway up -d
+make switch-up
+make switch-down
+make live-loop
 ```
 
-The default profile is Postgres and switch-core. `collab` adds Mattermost. `gateway` adds the admin UI on port `3000`. The agent API is port `8000`, bound to `127.0.0.1` unless `SWITCH_BIND_ADDR` is changed. Point `SWITCH_BRIDGE_URL` at `http://127.0.0.1:8000` and `SWITCH_REGISTRATION_KEY` at `AGENT_REGISTRATION_TOKEN`.
+`make switch-up` runs `oras pull` and `docker compose --profile collab --profile gateway up`. It writes `.switch/standalone/.env` (mode 600) with generated passwords and `AGENT_REGISTRATION_TOKEN`. That directory is gitignored. The agent API is `http://127.0.0.1:8000`, the Gateway is `http://127.0.0.1:3000`, and Mattermost is `http://127.0.0.1:8065` (team `switch`, login `user`). The password is `MATTERMOST_USER_PASSWORD` in the generated env file.
 
-Bring the stack up with the command above, register the agent, and import the template on the machine where you demo. That live pass is still ahead of this scaffold.
+On 2026-11-05 this stack came up on Switch 0.31.0 and the room loop ran. `make live-loop` registered `data-gatekeeper` and `data-fixer`, created `#data-ingest` and `#data-incidents` with the roles and contract documents, and posted the check, the blocked proposal, the passing proposal, `@fixer approve patch`, and the recheck. Mattermost has those posts. Redacted logs are in `demo_run/`. The shot list is [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
+
+The bootstrap agent could not run `create_room_from_yaml` because it has no linked Mattermost identity for `{$creator}`. The Gateway admin session validated the template (`ok: true`, no warnings) and saved it as "Data reliability room". Import that saved template from Switch Console once your account is linked to Mattermost, and pass the two agent names as the params.
 
 ### Connect the coding agent
 
-In Switch Console, connect the coding agent you already run, set its directory to this repo, and select it as `fixer_agent` when you run the template. Console exposes the room operations (`read_context`, `load_internal_documents`, `post_message`, `send_targeted_message`, `update_room_document`) to that session. The `@fixer` instructions tell it how to answer. `make demo` is the stand-in that shows the BLOCK then PASS loop before that session exists.
+In Switch Console, connect the coding agent you already run, set its directory to this repo, and select it as `fixer_agent` when you run the template. Console exposes the room operations (`read_context`, `load_internal_documents`, `post_message`, `send_targeted_message`, `update_room_document`) to that session. The `@fixer` instructions tell it how to answer. Until that session exists, `make demo` and `make live-loop` use the scripted fixer so the BLOCK then PASS loop is visible.
 
-Discord and Slack use the same rooms after you connect those bridges in Console. Connect the apps there when you want those surfaces.
+Discord and Slack use the same rooms after you connect those bridges in Console.
+
+## Demo video script
+
+Full shot list: [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md). Under 2:30. Mattermost is enough.
+
+| Time | On screen |
+| --- | --- |
+| 0:00–0:25 | `#data-ingest` linked to `#data-incidents`, roles `@gatekeeper` and `@fixer`, room documents |
+| 0:25–1:00 | `@gatekeeper check drops/orders_2026-11-05.csv` → 63 rows quarantined, escalate to `@fixer` |
+| 1:00–1:45 | Ungrounded proposal (`1..1000`) → `[AISchemaGate: BLOCKED]`, then the repaired proposal → `PASS` |
+| 1:45–2:15 | `@fixer approve patch`, then recheck → `240 / 240 rows valid (236 orders, 4 routed refunds, 0 quarantined)` |
+| 2:15–2:30 | `make demo` in this README, and the room documents, roles, and link that carry the loop to any chat app |
+
+## Troubleshooting
+
+### Containers cannot reach Postgres
+
+`make switch-up` on Docker 29 with both iptables-nft and iptables-legacy can leave the bridge dropping inter-container traffic. ARP succeeds and `nc postgres 5432` from `init-db` times out, so init-db exits after 30 tries. Host `127.0.0.1:5432` still answers. `scripts/pull-switch-compose.sh` inserts a hairpin ACCEPT on `DOCKER-FORWARD` for each `br-*` interface, on both `iptables` and `iptables-legacy`, when that rule is missing. The repair uses `sudo`. A Docker host that already has the rule is left as it is.
+
+### The agent cannot set its own addressing
+
+`update_agent_detail` with `addressing: anyone` returns 403 on Switch 0.31.0. The detail says an agent cannot change its own settings. The protocol page describes that call. The server reserves it for the owner. As Gateway admin, `PUT /gateway/agents/{id}/addressing-policy` with `{"policy": null}` opens the agent to anyone. The live loop did that. Two agents owned by Agent Bootstrap could already address each other before that change. A Mattermost teammate needs the open policy.
+
+### Template import from an unlinked agent
+
+`create_room_from_yaml` from the bootstrap agent returns 400 because `{$creator}` has no linked Mattermost account. `POST /gateway/templates/validate` on the admin session returned `ok: true` with an empty warning list, and the document was saved. Run the template from Console as a person whose Mattermost identity is linked. The live loop created the same rooms, roles, documents, and `escalates_to` link with `create_room` when the YAML run was refused.
+
+### Alias matches a role
+
+Switch 0.31.0 rejects an alias named `gatekeeper` when a role is also named `gatekeeper`. The template keeps the role and leaves the alias out. Address `@gatekeeper` as the role.
 
 ## Layout
 
 ```text
 switch_gate_agent.py              Switch agent protocol client and process entry
 switch-rooms.template.yaml        #data-ingest, #data-incidents, roles, documents, escalates_to
+scripts/pull-switch-compose.sh    pin Switch 0.31.0 and start Mattermost
+scripts/live_room_loop.py         one live check, BLOCK, PASS, approve, recheck
+docs/DEMO_SCRIPT.md               shot list for the recording
+demo_run/                         redacted log of the 2026-11-05 live loop
 contracts/                        orders and remediation contracts
 data_room/                        validation, grounding, normalizer, offline demo
 drops/                            generated CSV (gitignored)
